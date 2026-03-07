@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}КиноПортал Кирилла - фильмы и сериалы онлайн{% endblock %}
+{% block meta_description %}КиноПортал Кирилла — фильмы и сериалы онлайн, поиск, избранное, отзывы и история просмотров.{% endblock %}
+{% block og_title %}КиноПортал Кирилла - фильмы и сериалы онлайн{% endblock %}
+{% block og_description %}Смотри лучшие фильмы и сериалы онлайн, сохраняй в избранное и продолжай просмотр с нужного места.{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        Смотри <span class="highlight">лучшие фильмы</span><br>онлайн
+                    </h1>
+                    <p class="hero-subtitle">
+                        Огромная коллекция фильмов, сериалов и мультфильмов в HD качестве.
+                        Без регистрации и смс. Начни смотреть прямо сейчас!
+                    </p>
+
+                    <div class="hero-search">
+                        <form method="get" action="{% url 'search' %}">
+                            <input type="text" name="q" placeholder="Найти фильм, сериал, актера...">
+                            <button type="submit">🔍</button>
+                        </form>
+                    </div>
+
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <div class="hero-stat-number">10 000+</div>
+                            <div class="hero-stat-label">Фильмов</div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-number">500+</div>
+                            <div class="hero-stat-label">Сериалов</div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-number">50 000+</div>
+                            <div class="hero-stat-label">Пользователей</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if user.is_authenticated %}
+{% with continue_history=user.viewing_history.all|slice:":6" %}
+{% if continue_history %}
+<section class="films-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">📜 Продолжить просмотр</h2>
+            <a href="{% url 'viewing_history' %}" class="film-genre-link">Все →</a>
+        </div>
+
+        <div class="film-grid">
+            {% for item in continue_history %}
+            {% if not item.is_completed %}
+            <div class="film-card">
+                <div class="film-card-image">
+                    {% if item.episode %}
+                    <a href="{% url 'episode_player' item.episode.id %}">
+                        <img src="{{ item.episode.season.series.poster.url }}" alt="{{ item.episode }}">
+                    </a>
+                    <div class="film-badge">S{{ item.episode.season.number }}E{{ item.episode.number }}</div>
+                    {% elif item.film %}
+                    <a href="{% url 'film_player' item.film.slug %}">
+                        <img src="{{ item.film.poster.url }}" alt="{{ item.film.title }}">
+                    </a>
+                    {% endif %}
+
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(0,0,0,0.5);">
+                        <div style="width: {{ item.get_progress }}%; height: 100%; background: var(--accent-orange);"></div>
+                    </div>
+
+                    <div class="film-overlay">
+                        <a href="{% if item.episode %}{% url 'episode_player' item.episode.id %}{% else %}{% url 'film_player' item.film.slug %}{% endif %}" class="film-play-btn">▶</a>
+                    </div>
+                </div>
+                <div class="film-card-body">
+                    <h3 class="film-card-title">
+                        <a href="{% if item.episode %}{% url 'episode_player' item.episode.id %}{% else %}{% url 'film_player' item.film.slug %}{% endif %}">
+                            {% if item.episode %}
+                            {{ item.episode.season.series.title }}
+                            {% else %}
+                            {{ item.film.title }}
+                            {% endif %}
+                        </a>
+                    </h3>
+                    <div class="film-card-meta">
+                        <span>{{ item.get_progress }}% просмотрено</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endwith %}
+{% endif %}
+
+<section class="films-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Популярные фильмы</h2>
+
+            <div class="genre-filter">
+                <a href="{% url 'home' %}" class="genre-btn {% if not active_genre %}active{% endif %}">
+                    Все
+                </a>
+                {% for genre in genres %}
+                <a href="?genre={{ genre.slug }}" class="genre-btn {% if active_genre == genre.slug %}active{% endif %}">
+                    {{ genre.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="film-grid">
+            {% for film in films %}
+            <div class="film-card animate-fade-in" style="animation-delay: {{ forloop.counter0 }}0.1s;">
+                <div class="film-card-image">
+                    <a href="{% url 'film_detail' film.slug %}">
+                        <img src="{{ film.poster.url }}" alt="{{ film.title }}">
+                    </a>
+
+                    <div class="film-rating {% if film.rating >= 8 %}top{% endif %}">
+                        ★ {{ film.rating }}
+                    </div>
+
+                    {% if film.rating >= 9 %}
+                    <div class="film-badge">TOP</div>
+                    {% endif %}
+
+                    <div class="film-overlay">
+                        <a href="{% url 'film_player' film.slug %}" class="film-play-btn">▶</a>
+                    </div>
+                </div>
+
+                <div class="film-card-body">
+                    <h3 class="film-card-title">
+                        <a href="{% url 'film_detail' film.slug %}">{{ film.title }}</a>
+                    </h3>
+                    <div class="film-card-meta">
+                        <span>{{ film.year }}</span>
+                        <span class="dot"></span>
+                        <span>{{ film.duration }} мин</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="search-not-found">
+                    <div class="search-not-found-icon">🎬</div>
+                    <h3>Фильмы пока не добавлены</h3>
+                    <p style="color: var(--text-secondary);">Добавьте фильмы в админ-панели</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

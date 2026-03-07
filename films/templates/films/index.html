@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Фильмы — Kinoportal{% endblock %}
+
+{% block content %}
+<h1>Фильмы</h1>
+<ul>
+{% for film in films %}
+    <li><a href="{% url 'films:film_detail' slug=film.slug %}">{{ film.title }}</a> ({{ film.year }})</li>
+{% empty %}
+    <li>No films found.</li>
+{% endfor %}
+</ul>
+{% endblock %}

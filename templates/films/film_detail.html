@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ film.title }} - КиноПортал{% endblock %}
+
+{% block content %}
+<div class="film-page">
+    <div class="film-hero">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="film-poster">
+                        <img src="{{ film.poster.url }}" alt="{{ film.title }}">
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="film-info">
+                        <h1>{{ film.title }}</h1>
+                        {% if film.title_en %}
+                        <p class="title-en">{{ film.title_en }}</p>
+                        {% endif %}
+                        
+                        <div class="film-meta-tags">
+                            <span class="film-meta-tag rating">★ {{ avg_rating|default:film.rating }}</span>
+                            <span class="film-meta-tag">{{ film.year }} г.</span>
+                            <span class="film-meta-tag">{{ film.country }}</span>
+                            <span class="film-meta-tag">{{ film.duration }} мин</span>
+                            <span class="film-meta-tag">👁️ {{ film.views }} просмотров</span>
+                        </div>
+                        
+                        <div class="film-genres">
+                            {% for g in film.genre.all %}
+                            <a href="{% url 'home' %}?genre={{ g.slug }}" class="film-genre-link">{{ g.name }}</a>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="film-buttons">
+                            {% if film.video_file or film.video_url %}
+                            <a href="{% url 'film_player' film.slug %}" class="film-btn film-btn-primary">
+                                ▶ Смотреть
+                            </a>
+                            {% else %}
+                            <button class="film-btn film-btn-secondary" disabled>
+                                Скоро
+                            </button>
+                            {% endif %}
+                            
+                            {% if film.trailer %}
+                            <a href="{{ film.trailer }}" target="_blank" class="film-btn film-btn-secondary">
+                                🎬 Трейлер
+                            </a>
+                            {% endif %}
+                            
+                            <form method="post" action="{% url 'toggle_favorite' film.slug %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="film-btn film-btn-secondary" style="border: 1px solid var(--accent-orange);">
+                                    {% if user.is_authenticated and film in user.favorites.all %}
+                                    ❤️ В избранном
+                                    {% else %}
+                                    🤍 В избранное
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="film-description-box">
+                            <h3>О фильме</h3>
+                            <p>{{ film.description }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Секция отзывов -->
+    <div id="reviews" class="reviews-section" style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
+        <h2 style="margin-bottom: 30px;">💬 Отзывы зрителей</h2>
+        
+        <!-- Форма добавления отзыва -->
+        {% if user.is_authenticated %}
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; margin-bottom: 40px;">
+            <h3 style="margin-bottom: 20px;">
+                {% if user_review %}✏️ Ваш отзыв{% else %}📝 Написать отзыв{% endif %}
+            </h3>
+            
+            <form method="post" action="{% url 'add_review' film.slug %}">
+                {% csrf_token %}
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Ваша оценка:</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        {% for rating in "123456789X" %}
+<label style="cursor: pointer;">
+    <input type="radio" name="rating" value="{{ forloop.counter }}" 
+           class="rating-radio"
+           {% if user_review.rating == forloop.counter %}checked{% endif %}
+           required>
+    <span class="rating-label">{{ forloop.counter }}</span>
+</label>
+{% endfor %}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Текст отзыва (необязательно):</label>
+                    <textarea name="text" rows="4" 
+                              style="width: 100%; padding: 14px; background: var(--bg-tertiary); 
+                                     border: 1px solid var(--border-color); border-radius: 12px; 
+                                     color: var(--text-primary); font-size: 15px; resize: vertical;"
+                              placeholder="Поделитесь своим мнением о фильме...">{{ user_review.text|default:"" }}</textarea>
+                </div>
+                
+                <button type="submit" class="film-btn film-btn-primary">
+                    {% if user_review %}Обновить отзыв{% else %}Отправить отзыв{% endif %}
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; margin-bottom: 40px; text-align: center;">
+            <p style="color: var(--text-secondary); margin-bottom: 15px;">Чтобы оставить отзыв, нужно войти в аккаунт</p>
+            <a href="{% url 'login' %}" class="film-btn film-btn-primary">Войти</a>
+        </div>
+        {% endif %}
+        
+        <!-- Список отзывов -->
+        {% if reviews %}
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            {% for review in reviews %}
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--accent-orange), var(--accent-gold)); 
+                                    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                                    font-weight: 700; color: white;">
+                            {{ review.user.username|upper|make_list|first }}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary);">{{ review.user.username }}</div>
+                            <div style="font-size: 13px; color: var(--text-muted);">{{ review.created_at|date:"d.m.Y H:i" }}</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--accent-orange); color: white; padding: 6px 14px; border-radius: 20px; font-weight: 700;">
+                        ★ {{ review.rating }}/10
+                    </div>
+                </div>
+                
+                {% if review.text %}
+                <p style="color: var(--text-secondary); line-height: 1.7;">{{ review.text }}</p>
+                {% else %}
+                <p style="color: var(--text-muted); font-style: italic;">Без комментария</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px; background: var(--bg-secondary); border-radius: 16px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">💬</div>
+            <h3>Пока нет отзывов</h3>
+            <p style="color: var(--text-secondary);">Будьте первым кто оставит отзыв!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ratingLabels = document.querySelectorAll('.rating-label');
+    
+    ratingLabels.forEach(label => {
+        label.addEventListener('mouseenter', function() {
+            this.style.background = 'var(--accent-orange)';
+            this.style.color = 'white';
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        label.addEventListener('mouseleave', function() {
+            if (!this.previousElementSibling.checked) {
+                this.style.background = 'var(--bg-tertiary)';
+                this.style.color = 'var(--text-secondary)';
+                this.style.transform = 'translateY(0)';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

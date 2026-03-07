@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Смотреть {{ film.title }} - КиноПортал{% endblock %}
+
+{% block extra_css %}
+<link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
+<style>
+.video-js {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.video-js .vjs-progress-control {
+    cursor: pointer !important;
+    height: 25px !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+}
+
+.video-js .vjs-progress-control .vjs-progress-holder {
+    cursor: pointer !important;
+    height: 12px !important;
+    border-radius: 6px !important;
+    margin: 0 !important;
+}
+
+.video-js .vjs-play-progress {
+    background: linear-gradient(90deg, #ff6b35, #ff8c5a) !important;
+    border-radius: 6px !important;
+}
+
+.video-js .vjs-play-progress:before {
+    content: '●' !important;
+    color: #ff6b35 !important;
+    font-size: 16px !important;
+    line-height: 16px !important;
+    top: -2px !important;
+}
+
+.video-js .vjs-progress-holder {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-radius: 6px !important;
+}
+
+.video-js .vjs-slider {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-radius: 6px !important;
+}
+
+.video-js .vjs-load-progress {
+    background: rgba(255, 255, 255, 0.4) !important;
+    border-radius: 6px !important;
+}
+
+.video-js .vjs-mouse-display {
+    background: #ff6b35 !important;
+    border-radius: 6px !important;
+}
+
+.video-js .vjs-progress-control:hover .vjs-progress-holder {
+    font-size: 1.8em !important;
+    height: 15px !important;
+}
+
+.video-js .vjs-control-bar {
+    display: flex !important;
+    opacity: 1 !important;
+}
+
+.video-js.vjs-user-inactive .vjs-control-bar {
+    opacity: 1 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="player-page">
+    <div class="player-container">
+        
+        <div class="player-back">
+            <a href="{% url 'film_detail' film.slug %}">← Назад к "{{ film.title }}"</a>
+        </div>
+        
+        <div class="player-wrapper">
+            {% if film.video_file %}
+            <div class="player-video">
+                <video 
+                    id="my-video" 
+                    class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" 
+                    controls 
+                    preload="auto" 
+                    poster="{{ film.poster.url }}"
+                    playsinline
+                    width="100%"
+                    height="auto">
+                    <source src="{{ film.video_file.url }}" type="video/mp4">
+                    <p class="vjs-no-js">
+                        Для просмотра видео включите JavaScript.
+                    </p>
+                </video>
+            </div>
+            {% elif film.video_url %}
+                {% if 'youtube' in film.video_url or 'youtu.be' in film.video_url %}
+                <div style="position: relative; padding-bottom: 56.25%; height: 0;">
+                    <iframe 
+                        src="{{ film.get_video_embed_url }}?autoplay=1" 
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                {% else %}
+                <div class="player-video">
+                    <video 
+                        id="my-video" 
+                        class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" 
+                        controls 
+                        preload="auto"
+                        playsinline
+                        width="100%"
+                        height="auto">
+                        <source src="{{ film.video_url }}" type="video/mp4">
+                    </video>
+                </div>
+                {% endif %}
+            {% else %}
+            <div style="text-align: center; padding: 100px 20px; background: var(--bg-secondary);">
+                <div style="font-size: 60px; margin-bottom: 20px;">🎬</div>
+                <h3 style="color: white;">Видео недоступно</h3>
+                <p style="color: var(--text-secondary);">Скоро появится</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="player-info">
+            <h2 style="font-size: 24px; margin-bottom: 15px; color: var(--text-primary);">{{ film.title }}</h2>
+            {% if film.title_en %}
+            <h3 style="color: var(--accent-orange); margin-bottom: 15px;">{{ film.title_en }}</h3>
+            {% endif %}
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); margin-bottom: 15px;">
+                <span>{{ film.year }}</span>
+                <span>{{ film.country }}</span>
+                <span>{{ film.duration }} мин</span>
+                <span style="color: var(--accent-gold);">★ {{ film.rating }}</span>
+            </div>
+            <p style="color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">{{ film.description }}</p>
+            
+            {% if film.trailer %}
+            <a href="{{ film.trailer }}" target="_blank" class="film-btn film-btn-secondary">
+                🎬 Смотреть трейлер
+            </a>
+            {% endif %}
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
+<script>
+// === Video.js Плеер ===
+document.addEventListener('DOMContentLoaded', function() {
+    var videoElement = document.getElementById('my-video');
+    
+    if (videoElement) {
+        var player = videojs('my-video', {
+            fluid: true,
+            controls: true,
+            preload: 'auto',
+            autoplay: false,
+            controlBar: {
+                children: [
+                    'playToggle',
+                    'volumePanel',
+                    'currentTimeDisplay',
+                    'timeDivider',
+                    'durationDisplay',
+                    'progressControl',
+                    'playbackRateMenuButton',
+                    'fullscreenToggle'
+                ]
+            },
+            playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+        }, function() {
+            console.log('Video.js плеер инициализирован');
+            
+            this.on('seeking', function() {
+                console.log('Перемотка началась');
+            });
+            
+            this.on('seeked', function() {
+                console.log('Перемотка завершена');
+            });
+        });
+        
+        var progressControl = player.controlBar.progressControl;
+        if (progressControl) {
+            progressControl.on('click', function(event) {
+                console.log('Клик по прогресс-бару');
+            });
+        }
+    }
+});
+
+// === История просмотров ===
+document.addEventListener('DOMContentLoaded', function() {
+    var video = document.getElementById('my-video');
+    
+    if (video && {{ film.id }}) {
+        setInterval(function() {
+            if (!video.paused && video.currentTime > 0) {
+                fetch("{% url 'update_history' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        type: 'film',
+                        id: {{ film.id }},
+                        position: Math.floor(video.currentTime),
+                        duration: Math.floor(video.duration)
+                    })
+                }).then(response => {
+                    console.log('История обновлена');
+                }).catch(error => {
+                    console.error('Ошибка обновления истории:', error);
+                });
+            }
+        }, 10000);
+        
+        window.addEventListener('beforeunload', function() {
+            if (video.currentTime > 0) {
+                navigator.sendBeacon("{% url 'update_history' %}", JSON.stringify({
+                    type: 'film',
+                    id: {{ film.id }},
+                    position: Math.floor(video.currentTime),
+                    duration: Math.floor(video.duration)
+                }));
+            }
+        });
+        
+        video.addEventListener('ended', function() {
+            fetch("{% url 'update_history' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    type: 'film',
+                    id: {{ film.id }},
+                    position: Math.floor(video.duration),
+                    duration: Math.floor(video.duration)
+                })
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

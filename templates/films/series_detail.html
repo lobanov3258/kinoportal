@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ series.title }} - КиноПортал{% endblock %}
+
+{% block content %}
+<div class="film-page">
+    <div class="film-hero">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="film-poster">
+                        <img src="{{ series.poster.url }}" alt="{{ series.title }}">
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="film-info">
+                        <h1>{{ series.title }}</h1>
+                        {% if series.title_en %}
+                        <p class="title-en">{{ series.title_en }}</p>
+                        {% endif %}
+                        
+                        <div class="film-meta-tags">
+                            <span class="film-meta-tag rating">★ {{ series.rating }}</span>
+                            <span class="film-meta-tag">{{ series.year_start }}{% if series.year_end %} - {{ series.year_end }}{% else %} - ...{% endif %}</span>
+                            <span class="film-meta-tag">{{ series.country }}</span>
+                            <span class="film-meta-tag">👁️ {{ series.views }} просмотров</span>
+                        </div>
+                        
+                        <div class="film-genres">
+                            {% for g in series.genre.all %}
+                            <a href="{% url 'home' %}?genre={{ g.slug }}" class="film-genre-link">{{ g.name }}</a>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="film-description-box">
+                            <h3>О сериале</h3>
+                            <p>{{ series.description }}</p>
+                        </div>
+                        
+                        <div class="film-info-table">
+                            <div class="film-info-row">
+                                <span class="film-info-label">Режиссёр</span>
+                                <span class="film-info-value">{{ series.director }}</span>
+                            </div>
+                            <div class="film-info-row">
+                                <span class="film-info-label">Годы</span>
+                                <span class="film-info-value">{{ series.year_start }}{% if series.year_end %} - {{ series.year_end }}{% else %} - ...{% endif %}</span>
+                            </div>
+                            <div class="film-info-row">
+                                <span class="film-info-label">Страна</span>
+                                <span class="film-info-value">{{ series.country }}</span>
+                            </div>
+                            <div class="film-info-row">
+                                <span class="film-info-label">Сезонов</span>
+                                <span class="film-info-value">{{ series.seasons.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Сезоны и серии -->
+    <div class="seasons-section" style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
+        <h2 style="margin-bottom: 30px;">📺 Сезоны и серии</h2>
+        
+        {% for season in seasons %}
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+            <h3 style="margin-bottom: 20px; color: var(--accent-orange);">
+                Сезон {{ season.number }}{% if season.title %} — {{ season.title }}{% endif %}
+                <span style="color: var(--text-muted); font-size: 14px;">({{ season.year }})</span>
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                {% for episode in season.episodes.all %}
+                <a href="{% url 'episode_player' episode.id %}" 
+                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; 
+                          text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;"
+                   onmouseover="this.style.borderColor='var(--accent-orange)'; this.style.transform='translateY(-3px)';"
+                   onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='translateY(0)';">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 700; color: var(--accent-orange);">Серия {{ episode.number }}</span>
+                        <span style="font-size: 12px; color: var(--text-muted);">{{ episode.duration }} мин</span>
+                    </div>
+                    {% if episode.title %}
+                    <div style="font-size: 14px; color: var(--text-secondary);">{{ episode.title }}</div>
+                    {% endif %}
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">👁️ {{ episode.views }}</div>
+                </a>
+                {% empty %}
+                <div style="color: var(--text-muted); padding: 20px;">Серии этого сезона ещё не добавлены</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 60px; background: var(--bg-secondary); border-radius: 16px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">📺</div>
+            <h3>Сезоны пока не добавлены</h3>
+            <p style="color: var(--text-secondary);">Заходите позже!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

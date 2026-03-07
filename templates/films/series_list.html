@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Сериалы - КиноПортал{% endblock %}
+
+{% block content %}
+<div class="films-section" style="padding-top: 120px;">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">📺 Все сериалы</h2>
+        </div>
+        
+        <div class="film-grid">
+            {% for series in series %}
+            <div class="film-card">
+                <div class="film-card-image">
+                    <a href="{% url 'series_detail' series.slug %}">
+                        <img src="{{ series.poster.url }}" alt="{{ series.title }}">
+                    </a>
+                    <div class="film-rating {% if series.rating >= 8 %}top{% endif %}">
+                        ★ {{ series.rating }}
+                    </div>
+                </div>
+                <div class="film-card-body">
+                    <h3 class="film-card-title">
+                        <a href="{% url 'series_detail' series.slug %}">{{ series.title }}</a>
+                    </h3>
+                    <div class="film-card-meta">
+                        <span>{{ series.year_start }}{% if series.year_end %} - {{ series.year_end }}{% else %} - ...{% endif %}</span>
+                        <span class="dot"></span>
+                        <span>{{ series.seasons.count }} сезонов</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div style="text-align: center; padding: 60px; background: var(--bg-secondary); border-radius: 16px;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">📺</div>
+                    <h3>Сериалы пока не добавлены</h3>
+                    <p style="color: var(--text-secondary);">Заходите позже!</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,270 @@
+/* Основные стили страницы плеера */
+.player-page {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Кнопка назад */
+.player-header {
+    margin-bottom: 20px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.back-link:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateX(-5px);
+}
+
+.back-arrow {
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.back-text {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Контейнер видео */
+.video-container {
+    max-width: 1000px;
+    margin: 0 auto 30px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.video-container video,
+.video-container .youtube-container {
+    width: 100%;
+    display: block;
+}
+
+.youtube-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 */
+    height: 0;
+}
+
+.youtube-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Стилизация Video.js под Кинопоиск */
+.video-js .vjs-control-bar {
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+}
+
+.video-js .vjs-big-play-button {
+    background: rgba(231, 70, 70, 0.9) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 80px !important;
+    height: 80px !important;
+    line-height: 80px !important;
+    font-size: 40px !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    transition: all 0.3s ease !important;
+}
+
+.video-js:hover .vjs-big-play-button {
+    background: rgba(231, 70, 70, 1) !important;
+    transform: translate(-50%, -50%) scale(1.1) !important;
+}
+
+.video-js .vjs-play-progress,
+.video-js .vjs-volume-level {
+    background: #e74646 !important;
+}
+
+.video-js .vjs-slider {
+    background: rgba(255,255,255,0.3) !important;
+}
+
+/* Информация о фильме */
+.film-details {
+    max-width: 1000px;
+    margin: 0 auto;
+    color: #fff;
+}
+
+.film-title {
+    margin-bottom: 15px;
+}
+
+.film-title h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+}
+
+.title-en {
+    color: #888;
+    font-size: 18px;
+}
+
+.film-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.meta-item {
+    color: #ccc;
+}
+
+.meta-divider {
+    color: #555;
+}
+
+.rating {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.star {
+    margin-right: 5px;
+}
+
+.film-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.genre-tag {
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    font-size: 14px;
+    color: #ccc;
+    transition: all 0.3s ease;
+}
+
+.genre-tag:hover {
+    background: rgba(231, 70, 70, 0.3);
+    color: #fff;
+}
+
+.film-description {
+    margin-bottom: 25px;
+}
+
+.film-description h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #e74646;
+}
+
+.film-description p {
+    color: #aaa;
+    line-height: 1.7;
+    font-size: 16px;
+}
+
+.film-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-label {
+    color: #666;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.info-value {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* Нет видео */
+.no-video {
+    text-align: center;
+    padding: 100px 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+}
+
+.no-video-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+}
+
+.no-video h3 {
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.no-video p {
+    color: #666;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .film-title h1 {
+        font-size: 24px;
+    }
+    
+    .video-container {
+        border-radius: 0;
+    }
+    
+    .player-page {
+        padding: 10px;
+    }
+
+    /* немного уменьшить поля мета */
+    .film-meta {
+        font-size: 14px;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 575px) {
+    .film-title h1 {
+        font-size: 20px;
+    }
+    .film-genres {
+        gap: 6px;
+    }
+    .genre-tag {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+}

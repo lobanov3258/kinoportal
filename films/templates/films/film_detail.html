@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ film.title }}{% endblock %}
+
+{% block content %}
+<h1>{{ film.title }}</h1>
+<p><strong>Year:</strong> {{ film.year }}</p>
+<p><strong>Director:</strong> {{ film.director }}</p>
+<p>{{ film.description }}</p>
+{% if film.video_file %}
+    <p>Video: <a href="{{ film.video_file.url }}">Download</a></p>
+{% elif film.video_url %}
+    <p>Video URL: <a href="{{ film.video_url }}" target="_blank">{{ film.video_url }}</a></p>
+{% endif %}
+<p><a href="{% url 'films:home' %}">Back to list</a></p>
+{% endblock %}

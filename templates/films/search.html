@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Поиск - КиноПортал{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <div class="container">
+        {% if query %}
+        <h1 class="search-results-title">
+            Результаты поиска: <span class="search-query">"{{ query }}"</span>
+        </h1>
+        <p style="color: var(--text-secondary); margin-bottom: 40px;">
+            Найдено: {{ films.count }} фильмов
+        </p>
+        
+        <div class="film-grid">
+            {% for film in films %}
+            <div class="film-card">
+                <div class="film-card-image">
+                    <a href="{% url 'film_detail' film.slug %}">
+                        <img src="{{ film.poster.url }}" alt="{{ film.title }}">
+                    </a>
+                    <div class="film-rating {% if film.rating >= 8 %}top{% endif %}">
+                        ★ {{ film.rating }}
+                    </div>
+                    <div class="film-overlay">
+                        <a href="{% url 'film_player' film.slug %}" class="film-play-btn">▶</a>
+                    </div>
+                </div>
+                <div class="film-card-body">
+                    <h3 class="film-card-title">
+                        <a href="{% url 'film_detail' film.slug %}">{{ film.title }}</a>
+                    </h3>
+                    <div class="film-card-meta">
+                        <span>{{ film.year }}</span>
+                        <span class="dot"></span>
+                        <span>{{ film.duration }} мин</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="search-not-found">
+                    <div class="search-not-found-icon">🔍</div>
+                    <h3>Ничего не найдено</h3>
+                    <p style="color: var(--text-secondary);">Попробуйте изменить запрос</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 100px 20px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">🔍</div>
+            <h2 style="margin-bottom: 15px;">Поиск фильмов</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">Введите название фильма или сериала</p>
+            
+            <div class="hero-search" style="max-width: 500px; margin: 0 auto;">
+                <form method="get" action="{% url 'search' %}">
+                    <input type="text" name="q" placeholder="Введите название...">
+                    <button type="submit">🔍</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

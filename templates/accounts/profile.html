@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Мой профиль - КиноПортал{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="container">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ user.username|upper|make_list|first }}
+            </div>
+            <h1 class="profile-name">{{ user.username }}</h1>
+            <p class="profile-email">{{ user.email }}</p>
+        </div>
+        
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h2 style="margin-bottom: 20px;">Мои избранные фильмы</h2>
+            
+            {% if favorites %}
+            <div class="film-grid">
+                {% for favorite in favorites %}
+                <div class="film-card">
+                    <div class="film-card-image">
+                        <a href="{% url 'film_detail' favorite.film.slug %}">
+                            <img src="{{ favorite.film.poster.url }}" alt="{{ favorite.film.title }}">
+                        </a>
+                        <div class="film-rating {% if favorite.film.rating >= 8 %}top{% endif %}">
+                            ★ {{ favorite.film.rating }}
+                        </div>
+                        <div class="film-overlay">
+                            <a href="{% url 'film_player' favorite.film.slug %}" class="film-play-btn">▶</a>
+                        </div>
+                    </div>
+                    <div class="film-card-body">
+                        <h3 class="film-card-title">
+                            <a href="{% url 'film_detail' favorite.film.slug %}">{{ favorite.film.title }}</a>
+                        </h3>
+                        <div class="film-card-meta">
+                            <span>{{ favorite.film.year }}</span>
+                            <span class="dot"></span>
+                            <span>{{ favorite.film.duration }} мин</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 60px; background: var(--bg-secondary); border-radius: 16px;">
+                <div style="font-size: 60px; margin-bottom: 20px;">❤️</div>
+                <h3>У вас пока нет избранных фильмов</h3>
+                <p style="color: var(--text-secondary); margin-top: 10px;">Нажимайте на кнопку "В избранное" на страницах фильмов</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
