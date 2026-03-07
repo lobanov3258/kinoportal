@@ -47,9 +47,7 @@
     </div>
 </section>
 
-{% if user.is_authenticated %}
-{% with continue_history=user.viewing_history.all|slice:":6" %}
-{% if continue_history %}
+{% if user.is_authenticated and history_items %}
 <section class="films-section">
     <div class="container">
         <div class="section-header">
@@ -58,13 +56,12 @@
         </div>
 
         <div class="film-grid">
-            {% for item in continue_history %}
-            {% if not item.is_completed %}
+            {% for item in history_items %}
             <div class="film-card">
                 <div class="film-card-image">
                     {% if item.episode %}
                     <a href="{% url 'episode_player' item.episode.id %}">
-                        <img src="{{ item.episode.season.series.poster.url }}" alt="{{ item.episode }}">
+                        <img src="{{ item.episode.season.series.poster.url }}" alt="{{ item.episode.season.series.title }}">
                     </a>
                     <div class="film-badge">S{{ item.episode.season.number }}E{{ item.episode.number }}</div>
                     {% elif item.film %}
@@ -73,36 +70,30 @@
                     </a>
                     {% endif %}
 
-                    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(0,0,0,0.5);">
-                        <div style="width: {{ item.get_progress }}%; height: 100%; background: var(--accent-orange);"></div>
-                    </div>
-
                     <div class="film-overlay">
                         <a href="{% if item.episode %}{% url 'episode_player' item.episode.id %}{% else %}{% url 'film_player' item.film.slug %}{% endif %}" class="film-play-btn">▶</a>
                     </div>
                 </div>
+
                 <div class="film-card-body">
                     <h3 class="film-card-title">
                         <a href="{% if item.episode %}{% url 'episode_player' item.episode.id %}{% else %}{% url 'film_player' item.film.slug %}{% endif %}">
                             {% if item.episode %}
-                            {{ item.episode.season.series.title }}
+                                {{ item.episode.season.series.title }}
                             {% else %}
-                            {{ item.film.title }}
+                                {{ item.film.title }}
                             {% endif %}
                         </a>
                     </h3>
                     <div class="film-card-meta">
-                        <span>{{ item.get_progress }}% просмотрено</span>
+                        <span>{{ item.watched_at|date:"d.m.Y H:i" }}</span>
                     </div>
                 </div>
             </div>
-            {% endif %}
             {% endfor %}
         </div>
     </div>
 </section>
-{% endif %}
-{% endwith %}
 {% endif %}
 
 <section class="films-section">

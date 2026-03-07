@@ -1,219 +1,132 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from django.db import models
-from .models import Film, Genre, Favorite, Review, Series, Season, Episode, ViewingHistory
+from django.contrib import messages
+from django.urls import reverse
+from .models import Film, Genre, Favorite, Review, Series, Episode, ViewingHistory
+from .forms import ReviewForm
 
 
 def index(request):
     films = Film.objects.filter(is_published=True)
     genres = Genre.objects.all()
-    
     genre_slug = request.GET.get('genre')
+
     if genre_slug:
         films = films.filter(genre__slug=genre_slug)
-    
+
+    history_items = []
+    if request.user.is_authenticated:
+        history_items = ViewingHistory.objects.filter(user=request.user).select_related(
+            'film',
+            'episode__season__series'
+        ).order_by('-watched_at')[:6]
+
     return render(request, 'films/index.html', {
         'films': films,
         'genres': genres,
-        'active_genre': genre_slug
+        'active_genre': genre_slug,
+        'history_items': history_items,
     })
 
 
 def film_detail(request, slug):
-    film = get_object_or_404(Film, slug=slug, is_published=True)
-    film.views += 1
-    film.save(update_fields=['views'])
-    
-    reviews = film.reviews.all().select_related('user')
-    avg_rating = film.reviews.aggregate(avg=models.Avg('rating'))['avg'] or 0
-    
-    user_review = None
-    if request.user.is_authenticated:
-        user_review = Review.objects.filter(user=request.user, film=film).first()
-    
-    return render(request, 'films/film_detail.html', {
-        'film': film,
-        'reviews': reviews,
-        'avg_rating': round(avg_rating, 1),
-        'user_review': user_review
-    })
+    film = get_object_or_404(Film, slug=slug)
+    return render(request, 'films/film_detail.html', {'film': film})
 
 
+@login_required
 def film_player(request, slug):
     film = get_object_or_404(Film, slug=slug, is_published=True)
+
+    ViewingHistory.objects.update_or_create(
+        user=request.user,
+        film=film,
+        episode=None,
+        defaults={'progress': 0}
+    )
+
     return render(request, 'films/player.html', {'film': film})
 
 
 def search(request):
     query = request.GET.get('q')
-    films = []
-    
-    if query:
-        films = Film.objects.filter(
-            Q(title__icontains=query) | 
-            Q(title_en__icontains=query) |
-            Q(director__icontains=query),
-            is_published=True
-        )
-    
+    films = Film.objects.filter(Q(title__icontains=query)) if query else []
     return render(request, 'films/search.html', {'films': films, 'query': query})
 
 
 @login_required
-def toggle_favorite(request, slug):
-    film = get_object_or_404(Film, slug=slug)
-    favorite, created = Favorite.objects.get_or_create(user=request.user, film=film)
-    
-    if not created:
-        favorite.delete()
-        is_favorite = False
-    else:
-        is_favorite = True
-    
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({
-            'is_favorite': is_favorite,
-            'count': request.user.favorites.count()
-        })
-    
-    return redirect('film_detail', slug=slug)
+def add_to_favorites(request, film_id):
+    film = get_object_or_404(Film, id=film_id)
+    Favorite.objects.get_or_create(user=request.user, film=film)
+    return redirect('film_detail', slug=film.slug)
 
 
 @login_required
 def favorites_list(request):
-    favorites = request.user.favorites.all().select_related('film')
+    favorites = Favorite.objects.filter(user=request.user)
     return render(request, 'films/favorites.html', {'favorites': favorites})
 
 
 @login_required
-def add_review(request, slug):
-    film = get_object_or_404(Film, slug=slug, is_published=True)
-    
+def add_review(request, film_id):
+    film = get_object_or_404(Film, id=film_id)
     if request.method == 'POST':
-        rating = request.POST.get('rating')
-        text = request.POST.get('text', '')
-        
-        if rating:
-            try:
-                rating = int(rating)
-                if 1 <= rating <= 10:
-                    review, created = Review.objects.get_or_create(
-                        user=request.user,
-                        film=film,
-                        defaults={'rating': rating, 'text': text}
-                    )
-                    
-                    if not created:
-                        review.rating = rating
-                        review.text = text
-                        review.save()
-            except (ValueError, TypeError):
-                pass
-        
-        return redirect(f'/film/{slug}/#reviews')
-    
-    return redirect(f'/film/{slug}/')
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.film = film
+            review.user = request.user
+            review.save()
+            messages.success(request, 'Отзыв добавлен!')
+            url = reverse('film_detail', kwargs={'slug': film.slug})
+            return redirect(f"{url}#reviews")
+    return redirect('film_detail', slug=film.slug)
 
 
-# === СЕРИАЛЫ ===
+@login_required
+def viewing_history(request):
+    history = ViewingHistory.objects.filter(user=request.user).select_related(
+        'film',
+        'episode__season__series'
+    ).order_by('-watched_at')[:50]
+    return render(request, 'films/history.html', {'history': history})
+
 
 def series_list(request):
-    """Список всех сериалов"""
     series = Series.objects.filter(is_published=True)
     return render(request, 'films/series_list.html', {'series': series})
 
 
+@login_required
 def series_detail(request, slug):
-    """Страница сериала"""
     series = get_object_or_404(Series, slug=slug, is_published=True)
     series.views += 1
     series.save(update_fields=['views'])
-    
     seasons = series.seasons.prefetch_related('episodes').all()
-    
-    return render(request, 'films/series_detail.html', {
-        'series': series,
-        'seasons': seasons
-    })
+    return render(request, 'films/series_detail.html', {'series': series, 'seasons': seasons})
 
 
 @login_required
 def episode_player(request, episode_id):
-    """Плеер для серии"""
-    episode = get_object_or_404(Episode, id=episode_id)
+    episode = get_object_or_404(Episode, id=episode_id, is_published=True)
     episode.views += 1
     episode.save(update_fields=['views'])
-    
-    prev_episode = Episode.objects.filter(
-        season=episode.season, 
-        number__lt=episode.number
-    ).order_by('-number').first()
-    
+
+    ViewingHistory.objects.update_or_create(
+        user=request.user,
+        film=None,
+        episode=episode,
+        defaults={'progress': 0}
+    )
+
     next_episode = Episode.objects.filter(
-        season=episode.season, 
-        number__gt=episode.number
-    ).order_by('number').first()
-    
+        season=episode.season,
+        number__gt=episode.number,
+        is_published=True
+    ).first()
+
     return render(request, 'films/episode_player.html', {
         'episode': episode,
-        'prev_episode': prev_episode,
         'next_episode': next_episode
     })
-
-
-# === ИСТОРИЯ ПРОСМОТРОВ ===
-
-@login_required
-def update_history(request):
-    """Обновить историю просмотров (AJAX)"""
-    if request.method == 'POST':
-        import json
-        data = json.loads(request.body)
-        
-        content_type = data.get('type')
-        content_id = data.get('id')
-        position = int(data.get('position', 0))
-        duration = int(data.get('duration', 0))
-        
-        if content_type == 'film':
-            film = get_object_or_404(Film, id=content_id)
-            episode = None
-        elif content_type == 'episode':
-            episode = get_object_or_404(Episode, id=content_id)
-            film = None
-        else:
-            return JsonResponse({'success': False})
-        
-        history, created = ViewingHistory.objects.get_or_create(
-            user=request.user,
-            film=film,
-            episode=episode,
-            defaults={
-                'last_position': position,
-                'duration': duration,
-                'is_completed': position >= duration * 0.9
-            }
-        )
-        
-        if not created:
-            history.last_position = position
-            history.duration = duration
-            history.is_completed = position >= duration * 0.9
-            history.save()
-        
-        return JsonResponse({'success': True})
-    
-    return JsonResponse({'success': False})
-
-
-@login_required
-def continue_watching(request):
-    """Страница продолжить просмотр"""
-    history = ViewingHistory.objects.filter(
-        user=request.user,
-        is_completed=False
-    ).select_related('film', 'episode__season__series')[:12]
-    
-    return render(request, 'films/continue_watching.html', {'history': history})
