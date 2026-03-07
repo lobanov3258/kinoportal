@@ -1,7 +1,6 @@
+staticfiles/
+venv/
 __pycache__/
 *.pyc
 db.sqlite3
-venv/
-media/posters/
-media/episodes/
-.DS_Store
+media/
