@@ -6,11 +6,7 @@
 {% block extra_css %}
 <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
 <style>
-.video-js { width: 100% !important; height: 100% !important; }
-.video-js .vjs-progress-control { cursor: pointer !important; height: 25px !important; }
-.video-js .vjs-play-progress { background: linear-gradient(90deg, #ff6b35, #ff8c5a) !important; }
-.video-js .vjs-play-progress:before { content: '●' !important; color: #ff6b35 !important; font-size: 16px !important; }
-.video-js .vjs-progress-holder { background: rgba(255, 255, 255, 0.25) !important; border-radius: 6px !important; }
+.video-js { width: 100% !important; height: 100% !important; border-radius: 20px; }
 </style>
 {% endblock %}
 
@@ -22,35 +18,63 @@
         </div>
         
         <div class="player-wrapper">
-            {% if film.video_file %}
-                <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto" poster="{{ film.poster.url }}">
-                    <source src="{{ film.video_file.url }}" type="video/mp4">
-                </video>
+            <!-- ЯДЕРНАЯ ПРОВЕРКА: Ищем "youtube" прямо в строке -->
+            {% if 'youtube' in film.video_url|lower or 'youtu.be' in film.video_url|lower %}
+                
+                <!-- ЭТО 100% YOUTUBE -> IFRAME -->
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 20px; overflow: hidden;">
+                    <iframe 
+                        src="{{ film.get_video_embed_url }}" 
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                        allowfullscreen 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                    </iframe>
+                </div>
+
+            {% elif film.video_file %}
+                <!-- ЭТО ФАЙЛ -> VIDEO.JS -->
+                <div class="player-video">
+                    <video 
+                        id="my-video" 
+                        class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" 
+                        controls 
+                        preload="auto" 
+                        poster="{{ film.poster.url }}"
+                        playsinline>
+                        <source src="{{ film.video_file.url }}" type="video/mp4">
+                    </video>
+                </div>
+
             {% elif film.video_url %}
-                {% if 'youtube.com' in film.video_url or 'youtu.be' in film.video_url %}
-                    <!-- ЧИСТЫЙ IFRAME ДЛЯ YOUTUBE -->
-                    <div style="position: relative; padding-bottom: 56.25%; height: 0;">
-                        <iframe src="{{ film.get_video_embed_url }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-                    </div>
-                {% else %}
-                    <!-- VIDEO.JS ДЛЯ ДРУГИХ ССЫЛОК (.MP4) -->
-                    <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto">
+                <!-- ЭТО ДРУГАЯ ССЫЛКА -> VIDEO.JS -->
+                 <div class="player-video">
+                    <video 
+                        id="my-video" 
+                        class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" 
+                        controls 
+                        preload="auto"
+                        playsinline>
                         <source src="{{ film.video_url }}" type="video/mp4">
                     </video>
-                {% endif %}
+                </div>
+
             {% else %}
-                <div style="text-align: center; padding: 100px 20px; background: var(--bg-secondary);">
+                <div style="text-align: center; padding: 100px 20px; background: var(--bg-secondary); border-radius: 20px;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">🎬</div>
                     <h3 style="color: white;">Видео недоступно</h3>
                 </div>
             {% endif %}
         </div>
         
         <div class="player-info">
-            <h2 style="color: var(--text-primary);">{{ film.title }}</h2>
-            <div style="color: var(--text-secondary); margin-bottom: 15px;">
-                <span>{{ film.year }}</span> • <span>{{ film.country }}</span> • <span style="color: var(--accent-gold);">★ {{ film.rating }}</span>
+            <h2 style="font-size: 24px; margin-bottom: 15px; color: var(--text-primary);">{{ film.title }}</h2>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); margin-bottom: 15px;">
+                <span>{{ film.year }}</span>
+                <span>{{ film.country }}</span>
+                <span>{{ film.duration }} мин</span>
+                <span style="color: var(--accent-gold);">★ {{ film.rating }}</span>
             </div>
-            <p style="color: var(--text-secondary); line-height: 1.7;">{{ film.description }}</p>
+            <p style="color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">{{ film.description }}</p>
         </div>
     </div>
 </div>
@@ -61,15 +85,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var videoElement = document.getElementById('my-video');
-    // Инициализируем Video.js ТОЛЬКО если есть элемент с id="my-video" (т.е. не YouTube)
     if (videoElement) {
-        var player = videojs('my-video', {
-            fluid: true,
-            controls: true,
-            preload: 'auto',
-            autoplay: false,
-            playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2]
-        });
+        videojs('my-video');
     }
 });
 </script>

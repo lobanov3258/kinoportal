@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 
+
 class Genre(models.Model):
     name = models.CharField(max_length=200, verbose_name="Название жанра")
     slug = models.SlugField(max_length=200, unique=True, verbose_name="URL")
@@ -39,26 +40,22 @@ class Film(models.Model):
         return reverse('film_detail', kwargs={'slug': self.slug})
 
     def get_video_embed_url(self):
+        """Возвращает embed ссылку ТОЛЬКО для YouTube. Для всего остального None."""
         if not self.video_url:
             return None
-
+        
         url = self.video_url.strip()
-
+        
+        # Обработка YouTube
         if 'youtube.com/watch?v=' in url:
             video_id = url.split('v=')[-1].split('&')[0]
             return f'https://www.youtube.com/embed/{video_id}'
-
+        
         if 'youtu.be/' in url:
             video_id = url.split('youtu.be/')[-1].split('?')[0]
             return f'https://www.youtube.com/embed/{video_id}'
-
-        return url
-
-    def extract_youtube_id(self, url):
-        if 'youtu.be' in url:
-            return url.split('/')[-1]
-        if 'youtube.com' in url:
-            return url.split('v=')[-1].split('&')[0]
+            
+        # Если это не YouTube, возвращаем None
         return None
 
     class Meta:
@@ -154,19 +151,20 @@ class Episode(models.Model):
         return f"{self.season.series.title} - S{self.season.number}E{self.number}"
 
     def get_video_embed_url(self):
-        if self.video_url:
-            if 'youtube.com' in self.video_url or 'youtu.be' in self.video_url:
-                video_id = self.extract_youtube_id(self.video_url)
-                if video_id:
-                    return f'https://www.youtube.com/embed/{video_id}'
-            return self.video_url
-        return None
-
-    def extract_youtube_id(self, url):
-        if 'youtu.be' in url:
-            return url.split('/')[-1]
-        if 'youtube.com' in url:
-            return url.split('v=')[-1].split('&')[0]
+        """Возвращает embed ссылку ТОЛЬКО для YouTube."""
+        if not self.video_url:
+            return None
+        
+        url = self.video_url.strip()
+        
+        if 'youtube.com/watch?v=' in url:
+            video_id = url.split('v=')[-1].split('&')[0]
+            return f'https://www.youtube.com/embed/{video_id}'
+        
+        if 'youtu.be/' in url:
+            video_id = url.split('youtu.be/')[-1].split('?')[0]
+            return f'https://www.youtube.com/embed/{video_id}'
+            
         return None
 
     class Meta:
