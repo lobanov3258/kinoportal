@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}История просмотров - КиноПортал{% endblock %}
+{% block meta_description %}История просмотров пользователя на КиноПортале.{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="container">
+        <div class="profile-header">
+            <h1>📜 История просмотров</h1>
+            <p class="text-muted">Здесь отображаются фильмы и серии, которые вы уже открывали.</p>
+        </div>
+
+        {% if history %}
+        <div class="film-grid">
+            {% for item in history %}
+            <div class="film-card">
+                <div class="film-card-image">
+                    {% if item.episode %}
+                    <a href="{% url 'episode_player' item.episode.id %}">
+                        <img src="{{ item.episode.season.series.poster.url }}" alt="{{ item.episode.season.series.title }}">
+                    </a>
+                    <div class="film-badge">S{{ item.episode.season.number }}E{{ item.episode.number }}</div>
+                    {% elif item.film %}
+                    <a href="{% url 'film_player' item.film.slug %}">
+                        <img src="{{ item.film.poster.url }}" alt="{{ item.film.title }}">
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="film-card-body">
+                    <h3 class="film-card-title">
+                        {% if item.episode %}
+                        <a href="{% url 'episode_player' item.episode.id %}">
+                            {{ item.episode.season.series.title }}
+                        </a>
+                        {% elif item.film %}
+                        <a href="{% url 'film_player' item.film.slug %}">
+                            {{ item.film.title }}
+                        </a>
+                        {% endif %}
+                    </h3>
+
+                    <div class="film-card-meta">
+                        {% if item.episode %}
+                        <span>Сезон {{ item.episode.season.number }}, серия {{ item.episode.number }}</span>
+                        <span class="dot"></span>
+                        {% endif %}
+                        <span>{{ item.watched_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="search-not-found">
+            <div class="search-not-found-icon">🎬</div>
+            <h3>История пока пуста</h3>
+            <p style="color: var(--text-secondary);">Посмотрите фильм или серию, и они появятся здесь.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
