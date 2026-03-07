@@ -43,7 +43,6 @@ def film_player(request, slug):
         user=request.user,
         film=film,
         episode=None,
-        defaults={'progress': 0}
     )
 
     return render(request, 'films/player.html', {'film': film})
@@ -117,7 +116,6 @@ def episode_player(request, episode_id):
         user=request.user,
         film=None,
         episode=episode,
-        defaults={'progress': 0}
     )
 
     next_episode = Episode.objects.filter(
