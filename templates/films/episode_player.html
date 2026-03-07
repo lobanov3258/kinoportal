@@ -1,344 +1,82 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ episode.season.series.title }} - S{{ episode.season.number }}E{{ episode.number }} - КиноПортал{% endblock %}
+{% block title %}{{ episode.season.series.title }} - S{{ episode.season.number }}E{{ episode.number }}{% endblock %}
 
 {% block extra_css %}
 <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
-<style>
-/* Оверлей автовоспроизведения */
-.autoplay-overlay {
-    position: absolute;
-    bottom: 80px;
-    right: 80px;
-    background: rgba(0, 0, 0, 0.9);
-    border: 1px solid var(--accent-orange);
-    border-radius: 16px;
-    padding: 20px 25px;
-    display: none;
-    align-items: center;
-    gap: 20px;
-    z-index: 1000;
-    animation: slideInRight 0.3s ease;
-}
-
-.autoplay-overlay.show {
-    display: flex;
-}
-
-.autoplay-info {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.autoplay-title {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.autoplay-episode {
-    color: var(--text-secondary);
-    font-size: 12px;
-}
-
-.autoplay-cancel {
-    background: var(--accent-orange);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-.autoplay-cancel:hover {
-    background: var(--accent-orange-light);
-    transform: scale(1.05);
-}
-
-.autoplay-countdown {
-    background: rgba(255, 107, 53, 0.2);
-    color: var(--accent-orange);
-    padding: 5px 12px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 16px;
-}
-
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(50px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@media (max-width: 768px) {
-    .autoplay-overlay {
-        bottom: 20px;
-        right: 20px;
-        left: 20px;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .autoplay-cancel {
-        width: 100%;
-    }
-}
-</style>
 {% endblock %}
 
 {% block content %}
 <div class="player-page">
     <div class="player-container">
-        
         <div class="player-back">
-            <a href="{% url 'series_detail' episode.season.series.slug %}">← Назад к сериалу</a>
+            <a href="{% url 'series_detail' episode.season.series.slug %}#seasons">← Назад к сериалу</a>
         </div>
-        
+
         <div class="player-wrapper">
             {% if episode.video_file %}
-<div class="player-video">
-    <video 
-        id="my-video" 
-        class="video-js vjs-big-play-centered vjs-fluid" 
-        controls 
-        preload="auto" 
-        poster="{{ episode.season.series.poster.url }}"
-        playsinline
-        data-setup='{
-            "fluid": true,
-            "controlBar": {
-                "children": [
-                    "playToggle",
-                    "volumePanel",
-                    "currentTimeDisplay",
-                    "timeDivider",
-                    "durationDisplay",
-                    "progressControl",
-                    "playbackRateMenuButton",
-                    "fullscreenToggle"
-                ]
-            },
-            "playbackRates": [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
-        }'>
-        <source src="{{ episode.video_file.url }}" type="video/mp4">
-        <p class="vjs-no-js">
-            Для просмотра видео включите JavaScript.
-        </p>
-    </video>
-</div>
-{% elif episode.video_url %}
-    {% if 'youtube' in episode.video_url or 'youtu.be' in episode.video_url %}
-    <div style="position: relative; padding-bottom: 56.25%; height: 0;">
-        <iframe 
-            id="youtube-player"
-            src="{{ episode.get_video_embed_url }}?autoplay=1&enablejsapi=1" 
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen>
-        </iframe>
-    </div>
-    {% else %}
-    <div class="player-video">
-        <video 
-            id="my-video" 
-            class="video-js vjs-big-play-centered vjs-fluid" 
-            controls 
-            preload="auto"
-            playsinline
-            data-setup='{
-                "fluid": true,
-                "controlBar": {
-                    "children": [
-                        "playToggle",
-                        "volumePanel",
-                        "currentTimeDisplay",
-                        "timeDivider",
-                        "durationDisplay",
-                        "progressControl",
-                        "playbackRateMenuButton",
-                        "fullscreenToggle"
-                    ]
-                },
-                "playbackRates": [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
-            }'>
-            <source src="{{ episode.video_url }}" type="video/mp4">
-        </video>
-    </div>
-    {% endif %}
-{% else %}
-<div style="text-align: center; padding: 100px 20px; background: var(--bg-secondary);">
-    <div style="font-size: 60px; margin-bottom: 20px;">🎬</div>
-    <h3 style="color: white;">Видео недоступно</h3>
-    <p style="color: var(--text-secondary);">Скоро появится</p>
-</div>
-{% endif %}
-            
-            <!-- Оверлей автовоспроизведения -->
-            {% if next_episode %}
-            <div class="autoplay-overlay" id="autoplayOverlay">
-                <div class="autoplay-info">
-                    <div class="autoplay-title">Следующая серия</div>
-                    <div class="autoplay-episode">
-                        Сезон {{ next_episode.season.number }}, Серия {{ next_episode.number }}
-                    </div>
+            <video id="my-video"
+                   class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid"
+                   controls
+                   preload="auto"
+                   poster="{{ episode.season.series.poster.url }}">
+                <source src="{{ episode.video_file.url }}" type="video/mp4">
+            </video>
+
+            {% elif episode.video_url %}
+                {% if 'youtube.com' in episode.video_url or 'youtu.be' in episode.video_url %}
+                <div style="position: relative; padding-bottom: 56.25%; height: 0;">
+                    <iframe
+                        src="{{ episode.get_video_embed_url }}"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"
+                        allowfullscreen>
+                    </iframe>
                 </div>
-                <button class="autoplay-cancel" id="autoplayCancel">
-                    Отмена <span class="autoplay-countdown" id="countdown">5</span>
-                </button>
+                {% else %}
+                <video id="my-video"
+                       class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid"
+                       controls
+                       preload="auto"
+                       poster="{{ episode.season.series.poster.url }}">
+                    <source src="{{ episode.video_url }}" type="video/mp4">
+                </video>
+                {% endif %}
+            {% else %}
+            <div style="text-align:center; padding:100px 20px; background: var(--bg-secondary);">
+                <h3 style="color:white;">Видео недоступно</h3>
             </div>
             {% endif %}
         </div>
-        
-        <div class="player-navigation">
-            {% if prev_episode %}
-            <a href="{% url 'episode_player' prev_episode.id %}" class="film-btn film-btn-secondary">
-                ← Предыдущая серия
-            </a>
-            {% else %}
-            <div></div>
-            {% endif %}
-            
+
+        <div class="player-info">
+            <h2 style="color: var(--text-primary);">{{ episode.season.series.title }}</h2>
+            <div style="color: var(--text-secondary); margin-bottom: 15px;">
+                <span>Сезон {{ episode.season.number }}</span> • <span>Серия {{ episode.number }}</span>
+                {% if episode.title %} • <span>{{ episode.title }}</span>{% endif %}
+            </div>
+
             {% if next_episode %}
-            <a href="{% url 'episode_player' next_episode.id %}" class="film-btn film-btn-primary" id="nextEpisodeBtn">
+            <a href="{% url 'episode_player' next_episode.id %}" class="film-btn film-btn-primary">
                 Следующая серия →
             </a>
             {% endif %}
         </div>
-        
-        <div class="player-info">
-            <h2 style="font-size: 24px; margin-bottom: 15px; color: var(--text-primary);">
-                {{ episode.season.series.title }} — Сезон {{ episode.season.number }}, Серия {{ episode.number }}
-            </h2>
-            {% if episode.title %}
-            <h3 style="color: var(--accent-orange); margin-bottom: 15px;">{{ episode.title }}</h3>
-            {% endif %}
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); margin-bottom: 15px;">
-                <span>{{ episode.season.year }} г.</span>
-                <span>{{ episode.duration }} мин</span>
-                <span>👁️ {{ episode.views }} просмотров</span>
-            </div>
-            {% if episode.description %}
-            <p style="color: var(--text-secondary); line-height: 1.7;">{{ episode.description }}</p>
-            {% endif %}
-        </div>
-        
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
-
-{% if next_episode %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const overlay = document.getElementById('autoplayOverlay');
-    const cancelBtn = document.getElementById('autoplayCancel');
-    const countdownEl = document.getElementById('countdown');
-    const nextBtn = document.getElementById('nextEpisodeBtn');
-    
-    let countdown = 5;
-    let autoplayTimer;
-    let countdownInterval;
-    
-    // Функция запуска автовоспроизведения
-    function startAutoplay() {
-        overlay.classList.add('show');
-        countdown = 5;
-        countdownEl.textContent = countdown;
-        
-        countdownInterval = setInterval(() => {
-            countdown--;
-            countdownEl.textContent = countdown;
-            
-            if (countdown <= 0) {
-                clearInterval(countdownInterval);
-                // Переход к следующей серии
-                window.location.href = nextBtn.href;
-            }
-        }, 1000);
-    }
-    
-    // Отмена автовоспроизведения
-    cancelBtn.addEventListener('click', function() {
-        clearInterval(countdownInterval);
-        overlay.classList.remove('show');
-    });
-    
-    // Проверка окончания видео
     const video = document.getElementById('my-video');
-    
     if (video) {
-        const player = videojs('my-video');
-        
-        player.on('ended', function() {
-            startAutoplay();
-        });
-        
-        player.on('play', function() {
-            // Скрыть оверлей если пользователь снова начал смотреть
-            overlay.classList.remove('show');
-            clearInterval(countdownInterval);
-        });
-    }
-    
-    // Для YouTube
-    const youtubePlayer = document.getElementById('youtube-player');
-    if (youtubePlayer) {
-        // YouTube автоматически покажет следующую серию в рекомендациях
-        // Но мы всё равно покажем оверлей через 10 секунд после начала
-        setTimeout(() => {
-            // Можно добавить логику для YouTube если нужно
-        }, 10000);
-    }
-});
-</script>
-{% endif %}
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var video = document.getElementById('my-video');
-    
-    if (video) {
-        // Отправляем прогресс каждые 10 секунд
-        setInterval(function() {
-            if (!video.paused && video.currentTime > 0) {
-                fetch("{% url 'update_history' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({
-                        type: 'episode',
-                        id: {{ episode.id }},
-                        position: Math.floor(video.currentTime),
-                        duration: Math.floor(video.duration)
-                    })
-                });
-            }
-        }, 10000);
-        
-        // Отправляем при закрытии страницы
-        window.addEventListener('beforeunload', function() {
-            if (video.currentTime > 0) {
-                navigator.sendBeacon("{% url 'update_history' %}", JSON.stringify({
-                    type: 'episode',
-                    id: {{ episode.id }},
-                    position: Math.floor(video.currentTime),
-                    duration: Math.floor(video.duration)
-                }));
-            }
+        videojs('my-video', {
+            fluid: true,
+            controls: true,
+            preload: 'auto',
+            autoplay: false
         });
     }
 });
