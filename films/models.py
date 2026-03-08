@@ -1,18 +1,13 @@
 from django.db import models
 from django.urls import reverse
 
-
 class Genre(models.Model):
     name = models.CharField(max_length=200, verbose_name="Название жанра")
     slug = models.SlugField(max_length=200, unique=True, verbose_name="URL")
-
-    def __str__(self):
-        return self.name
-
+    def __str__(self): return self.name
     class Meta:
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
-
 
 class Film(models.Model):
     title = models.CharField(max_length=300, verbose_name="Название фильма")
@@ -33,49 +28,50 @@ class Film(models.Model):
     is_published = models.BooleanField(default=True, verbose_name="Опубликован")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата добавления")
 
-    def __str__(self):
-        return self.title
+    def __str__(self): return self.title
+    def get_absolute_url(self): return reverse('film_detail', kwargs={'slug': self.slug})
 
-    def get_absolute_url(self):
-        return reverse('film_detail', kwargs={'slug': self.slug})
+    @property
+    def is_embed_video(self):
+        """Проверяет, нужна ли ссылка в виде iframe"""
+        if not self.video_url: return False
+        return any(domain in self.video_url for domain in ['youtu', 'vk.com', 'rutube.ru', 'vimeo.com', 'embed', 'iframe'])
 
     def get_video_embed_url(self):
-        """Возвращает embed ссылку ТОЛЬКО для YouTube. Для всего остального None."""
-        if not self.video_url:
-            return None
-        
+        if not self.video_url: return None
         url = self.video_url.strip()
-        
-        # Обработка YouTube
-        if 'youtube.com/watch?v=' in url:
-            video_id = url.split('v=')[-1].split('&')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-        
+        if 'embed' in url or 'iframe' in url:
+            if 'src="' in url: url = url.split('src="')[1].split('"')[0]
+            return url
+        if 'youtube.com/watch' in url:
+            try: return f'https://www.youtube.com/embed/{url.split("v=")[1].split("&")[0]}'
+            except IndexError: pass
         if 'youtu.be/' in url:
-            video_id = url.split('youtu.be/')[-1].split('?')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-            
-        # Если это не YouTube, возвращаем None
-        return None
+            try: return f'https://www.youtube.com/embed/{url.split("youtu.be/")[1].split("?")[0]}'
+            except IndexError: pass
+        if 'vk.com/video' in url:
+            try:
+                oid, vid = url.split('video')[1].split('?')[0].split('_')
+                return f'https://vk.com/video_ext.php?oid={oid}&id={vid}&hd=2'
+            except Exception: pass
+        if 'rutube.ru/video/' in url:
+            try: return f'https://rutube.ru/play/embed/{url.split("video/")[1].strip("/")}/'
+            except IndexError: pass
+        return url
 
     class Meta:
         verbose_name = "Фильм"
         verbose_name_plural = "Фильмы"
         ordering = ['-created_at']
 
-
 class Favorite(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='favorites')
     film = models.ForeignKey(Film, on_delete=models.CASCADE, related_name='favorited_by')
     added_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         unique_together = ('user', 'film')
         ordering = ['-added_at']
-
-    def __str__(self):
-        return f"{self.user.username} - {self.film.title}"
-
+    def __str__(self): return f"{self.user.username} - {self.film.title}"
 
 class Review(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='reviews')
@@ -83,14 +79,10 @@ class Review(models.Model):
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 11)], verbose_name="Оценка")
     text = models.TextField(verbose_name="Текст отзыва", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         unique_together = ('user', 'film')
         ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.user.username} - {self.film.title} ({self.rating}/10)"
-
+    def __str__(self): return f"{self.user.username} - {self.film.title} ({self.rating}/10)"
 
 class Series(models.Model):
     title = models.CharField(max_length=300, verbose_name="Название сериала")
@@ -108,34 +100,24 @@ class Series(models.Model):
     views = models.PositiveIntegerField(default=0, verbose_name="Просмотры")
     is_published = models.BooleanField(default=True, verbose_name="Опубликован")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата добавления")
-
-    def __str__(self):
-        return self.title
-
-    def get_absolute_url(self):
-        return reverse('series_detail', kwargs={'slug': self.slug})
-
+    def __str__(self): return self.title
+    def get_absolute_url(self): return reverse('series_detail', kwargs={'slug': self.slug})
     class Meta:
         verbose_name = "Сериал"
         verbose_name_plural = "Сериалы"
         ordering = ['-created_at']
-
 
 class Season(models.Model):
     series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name='seasons')
     number = models.PositiveIntegerField(verbose_name="Номер сезона")
     title = models.CharField(max_length=200, blank=True, verbose_name="Название сезона")
     year = models.PositiveIntegerField(verbose_name="Год выпуска")
-
-    def __str__(self):
-        return f"{self.series.title} - Сезон {self.number}"
-
+    def __str__(self): return f"{self.series.title} - Сезон {self.number}"
     class Meta:
         verbose_name = "Сезон"
         verbose_name_plural = "Сезоны"
         ordering = ['number']
         unique_together = ('series', 'number')
-
 
 class Episode(models.Model):
     season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name='episodes')
@@ -146,33 +128,40 @@ class Episode(models.Model):
     video_url = models.URLField(verbose_name="Ссылка на видео", blank=True, null=True)
     duration = models.PositiveIntegerField(verbose_name="Длительность (мин.)", default=45)
     views = models.PositiveIntegerField(default=0, verbose_name="Просмотры")
+    def __str__(self): return f"{self.season.series.title} - S{self.season.number}E{self.number}"
 
-    def __str__(self):
-        return f"{self.season.series.title} - S{self.season.number}E{self.number}"
+    @property
+    def is_embed_video(self):
+        if not self.video_url: return False
+        return any(domain in self.video_url for domain in ['youtu', 'vk.com', 'rutube.ru', 'vimeo.com', 'embed', 'iframe'])
 
     def get_video_embed_url(self):
-        """Возвращает embed ссылку ТОЛЬКО для YouTube."""
-        if not self.video_url:
-            return None
-        
+        if not self.video_url: return None
         url = self.video_url.strip()
-        
-        if 'youtube.com/watch?v=' in url:
-            video_id = url.split('v=')[-1].split('&')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-        
+        if 'embed' in url or 'iframe' in url:
+            if 'src="' in url: url = url.split('src="')[1].split('"')[0]
+            return url
+        if 'youtube.com/watch' in url:
+            try: return f'https://www.youtube.com/embed/{url.split("v=")[1].split("&")[0]}'
+            except IndexError: pass
         if 'youtu.be/' in url:
-            video_id = url.split('youtu.be/')[-1].split('?')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-            
-        return None
+            try: return f'https://www.youtube.com/embed/{url.split("youtu.be/")[1].split("?")[0]}'
+            except IndexError: pass
+        if 'vk.com/video' in url:
+            try:
+                oid, vid = url.split('video')[1].split('?')[0].split('_')
+                return f'https://vk.com/video_ext.php?oid={oid}&id={vid}&hd=2'
+            except Exception: pass
+        if 'rutube.ru/video/' in url:
+            try: return f'https://rutube.ru/play/embed/{url.split("video/")[1].strip("/")}/'
+            except IndexError: pass
+        return url
 
     class Meta:
         verbose_name = "Серия"
         verbose_name_plural = "Серии"
         ordering = ['number']
         unique_together = ('season', 'number')
-
 
 class ViewingHistory(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='viewing_history')
@@ -182,19 +171,13 @@ class ViewingHistory(models.Model):
     last_position = models.PositiveIntegerField(default=0, verbose_name="Последняя позиция (сек)")
     duration = models.PositiveIntegerField(default=0, verbose_name="Общая длительность (сек)")
     is_completed = models.BooleanField(default=False, verbose_name="Просмотрено полностью")
-
     def __str__(self):
-        if self.episode:
-            return f"{self.user.username} - {self.episode}"
-        elif self.film:
-            return f"{self.user.username} - {self.film.title}"
+        if self.episode: return f"{self.user.username} - {self.episode}"
+        elif self.film: return f"{self.user.username} - {self.film.title}"
         return f"{self.user.username} - неизвестно"
-
     def get_progress(self):
-        if self.duration > 0:
-            return int((self.last_position / self.duration) * 100)
+        if self.duration > 0: return int((self.last_position / self.duration) * 100)
         return 0
-
     class Meta:
         verbose_name = "История просмотров"
         verbose_name_plural = "История просмотров"

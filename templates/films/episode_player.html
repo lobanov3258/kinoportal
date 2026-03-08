@@ -4,53 +4,32 @@
 {% block title %}{{ episode.season.series.title }} - S{{ episode.season.number }}E{{ episode.number }}{% endblock %}
 
 {% block extra_css %}
+{% if not episode.is_embed_video %}
 <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
 <style>
 .video-js { width: 100% !important; height: 100% !important; }
 .video-js .vjs-progress-control { cursor: pointer !important; height: 25px !important; }
-.video-js .vjs-play-progress { background: linear-gradient(90deg, #ff6b35, #ff8c5a) !important; }
 </style>
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="player-page">
-    <div class="player-container">
-        <div class="player-back">
-            <a href="{% url 'series_detail' episode.season.series.slug %}#seasons">← Назад к сериалу</a>
+<div class="player-page" style="padding-top: 100px; min-height: 100vh; background: #000;">
+    <div class="player-container" style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+        <div class="player-back" style="margin-bottom: 20px;">
+            <a href="{% url 'series_detail' episode.season.series.slug %}#seasons" class="btn btn-outline-secondary text-white">← Назад к сериалу</a>
         </div>
-        
         <div class="player-wrapper">
-            {% if episode.video_file %}
-                <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto" poster="{{ episode.season.series.poster.url }}">
-                    <source src="{{ episode.video_file.url }}" type="video/mp4">
-                </video>
-            {% elif episode.video_url %}
-                {% if 'youtube.com' in episode.video_url or 'youtu.be' in episode.video_url %}
-                    <!-- ЧИСТЫЙ IFRAME ДЛЯ YOUTUBE -->
-                    <div style="position: relative; padding-bottom: 56.25%; height: 0;">
-                        <iframe src="{{ episode.get_video_embed_url }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-                    </div>
-                {% else %}
-                    <!-- VIDEO.JS ДЛЯ ДРУГИХ ССЫЛОК -->
-                    <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto">
-                        <source src="{{ episode.video_url }}" type="video/mp4">
-                    </video>
-                {% endif %}
-            {% else %}
-                <div style="text-align: center; padding: 100px 20px; background: var(--bg-secondary);">
-                    <h3 style="color: white;">Видео недоступно</h3>
+            {% if episode.is_embed_video %}
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; background: #000;">
+                    <iframe src="{{ episode.get_video_embed_url }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
                 </div>
-            {% endif %}
-        </div>
-        
-        <div class="player-info">
-            <h2 style="color: var(--text-primary);">{{ episode.season.series.title }}</h2>
-            <div style="color: var(--text-secondary); margin-bottom: 15px;">
-                <span>Сезон {{ episode.season.number }}</span> • <span>Серия {{ episode.number }}</span>
-                {% if episode.title %} • <span>{{ episode.title }}</span>{% endif %}
-            </div>
-            {% if next_episode %}
-            <a href="{% url 'episode_player' next_episode.id %}" class="film-btn film-btn-primary">Следующая серия →</a>
+            {% elif episode.video_file or episode.video_url %}
+                <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto">
+                    <source src="{% if episode.video_file %}{{ episode.video_file.url }}{% else %}{{ episode.video_url }}{% endif %}" type="video/mp4">
+                </video>
+            {% else %}
+                <h3 style="color: white; text-align: center; padding: 100px 0;">Видео недоступно</h3>
             {% endif %}
         </div>
     </div>
@@ -58,18 +37,13 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if not episode.is_embed_video %}
 <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var videoElement = document.getElementById('my-video');
-    if (videoElement) {
-        videojs('my-video', {
-            fluid: true,
-            controls: true,
-            preload: 'auto',
-            autoplay: false
-        });
-    }
+    var v = document.getElementById('my-video');
+    if (v) videojs('my-video', { fluid: true, controls: true });
 });
 </script>
+{% endif %}
 {% endblock %}
