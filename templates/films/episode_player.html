@@ -1,97 +1,59 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Смотреть {{ film.title }} - КиноПортал{% endblock %}
+{% block title %}{{ episode.season.series.title }} - S{{ episode.season.number }}E{{ episode.number }}{% endblock %}
 
 {% block extra_css %}
+{% if not episode.is_embed_video %}
 <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
 <style>
-.video-js { width: 100% !important; height: 100% !important; border-radius: 20px; }
+.video-js { width: 100% !important; height: 100% !important; }
 .video-js .vjs-progress-control { cursor: pointer !important; height: 25px !important; }
 </style>
+{% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="player-page">
-    <div class="player-container">
-        <div class="player-back">
-            <a href="{% url 'film_detail' film.slug %}">← Назад к "{{ film.title }}"</a>
+<div class="player-page" style="padding-top: 100px; min-height: 100vh; background: #000;">
+    <div class="player-container" style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+        <div class="player-back" style="margin-bottom: 20px;">
+            <a href="{% url 'series_detail' episode.season.series.slug %}#seasons" class="btn btn-outline-secondary text-white">← Назад к сериалу</a>
         </div>
-        
         <div class="player-wrapper">
-            
-            <!-- ВАРИАНТ 1: YouTube, VK, RuTube (Embed ссылка есть) -->
-            {% if film.get_video_embed_url %}
-                <div style="position: relative; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 20px; overflow: hidden;">
-                    <iframe 
-                        src="{{ film.get_video_embed_url }}" 
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
-                        allowfullscreen 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-                    </iframe>
+            {% if episode.is_embed_video %}
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; background: #000;">
+                    <iframe src="{{ episode.get_video_embed_url }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
                 </div>
-
-            <!-- ВАРИАНТ 2: Загруженный файл -->
-            {% elif film.video_file %}
-                <div class="player-video">
-                    <video 
-                        id="my-video" 
-                        class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" 
-                        controls 
-                        preload="auto" 
-                        poster="{{ film.poster.url }}"
-                        playsinline>
-                        <source src="{{ film.video_file.url }}" type="video/mp4">
-                    </video>
-                </div>
-
-            <!-- ВАРИАНТ 3: Прямая ссылка (.mp4) -->
-            {% elif film.video_url %}
-                 <div class="player-video">
-                    <video 
-                        id="my-video" 
-                        class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" 
-                        controls 
-                        preload="auto"
-                        playsinline>
-                        <source src="{{ film.video_url }}" type="video/mp4">
-                    </video>
-                </div>
-
-            <!-- Ничего нет -->
+            {% elif episode.video_file or episode.video_url %}
+                <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto">
+                    <source src="{% if episode.video_file %}{{ episode.video_file.url }}{% else %}{{ episode.video_url }}{% endif %}" type="video/mp4">
+                </video>
             {% else %}
-                <div style="text-align: center; padding: 100px 20px; background: var(--bg-secondary); border-radius: 20px;">
-                    <div style="font-size: 60px; margin-bottom: 20px;">🎬</div>
-                    <h3 style="color: white;">Видео недоступно</h3>
-                </div>
+                <h3 style="color: white; text-align: center; padding: 100px 0;">Видео недоступно</h3>
             {% endif %}
         </div>
-        
-        <div class="player-info">
-            <h2 style="font-size: 24px; margin-bottom: 15px; color: var(--text-primary);">{{ film.title }}</h2>
-            {% if film.title_en %}
-            <h3 style="color: var(--accent-orange); margin-bottom: 15px;">{{ film.title_en }}</h3>
-            {% endif %}
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; color: var(--text-secondary); margin-bottom: 15px;">
-                <span>{{ film.year }}</span>
-                <span>{{ film.country }}</span>
-                <span>{{ film.duration }} мин</span>
-                <span style="color: var(--accent-gold);">★ {{ film.rating }}</span>
+        <div class="player-info" style="margin-top: 20px;">
+            <h2 style="color: var(--text-primary);">{{ episode.season.series.title }}</h2>
+            <div style="color: var(--text-secondary); margin-bottom: 15px;">
+                <span>Сезон {{ episode.season.number }}</span> • <span>Серия {{ episode.number }}</span>
+                {% if episode.title %} • <span>{{ episode.title }}</span>{% endif %}
             </div>
-            <p style="color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">{{ film.description }}</p>
+            {% if next_episode %}
+            <a href="{% url 'episode_player' next_episode.id %}" class="btn btn-primary" style="margin-top: 15px;">Следующая серия →</a>
+            {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{% if not episode.is_embed_video %}
 <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var videoElement = document.getElementById('my-video');
-    if (videoElement) {
-        videojs('my-video');
-    }
+    var v = document.getElementById('my-video');
+    if (v) videojs('my-video', { fluid: true, controls: true });
 });
 </script>
+{% endif %}
 {% endblock %}

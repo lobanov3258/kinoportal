@@ -33,9 +33,8 @@ class Film(models.Model):
 
     @property
     def is_embed_video(self):
-        """Проверяет, нужна ли ссылка в виде iframe"""
         if not self.video_url: return False
-        return any(domain in self.video_url for domain in ['youtu', 'vk.com', 'rutube.ru', 'vimeo.com', 'embed', 'iframe'])
+        return any(domain in self.video_url for domain in ['youtu', 'vk.com', 'vkvideo.ru', 'rutube.ru', 'vimeo.com', 'embed', 'iframe'])
 
     def get_video_embed_url(self):
         if not self.video_url: return None
@@ -49,9 +48,16 @@ class Film(models.Model):
         if 'youtu.be/' in url:
             try: return f'https://www.youtube.com/embed/{url.split("youtu.be/")[1].split("?")[0]}'
             except IndexError: pass
-        if 'vk.com/video' in url:
+        if 'vk.com/video' in url or 'vkvideo.ru/video' in url:
             try:
-                oid, vid = url.split('video')[1].split('?')[0].split('_')
+                # Извлекаем ID (например, -233305174_456240178)
+                video_id = url.split('video')[1].split('?')[0]
+                if video_id.startswith('-'):
+                    video_id = video_id[1:]
+                    oid, vid = video_id.split('_')
+                    oid = '-' + oid
+                else:
+                    oid, vid = video_id.split('_')
                 return f'https://vk.com/video_ext.php?oid={oid}&id={vid}&hd=2'
             except Exception: pass
         if 'rutube.ru/video/' in url:
@@ -133,7 +139,7 @@ class Episode(models.Model):
     @property
     def is_embed_video(self):
         if not self.video_url: return False
-        return any(domain in self.video_url for domain in ['youtu', 'vk.com', 'rutube.ru', 'vimeo.com', 'embed', 'iframe'])
+        return any(domain in self.video_url for domain in ['youtu', 'vk.com', 'vkvideo.ru', 'rutube.ru', 'vimeo.com', 'embed', 'iframe'])
 
     def get_video_embed_url(self):
         if not self.video_url: return None
@@ -147,9 +153,15 @@ class Episode(models.Model):
         if 'youtu.be/' in url:
             try: return f'https://www.youtube.com/embed/{url.split("youtu.be/")[1].split("?")[0]}'
             except IndexError: pass
-        if 'vk.com/video' in url:
+        if 'vk.com/video' in url or 'vkvideo.ru/video' in url:
             try:
-                oid, vid = url.split('video')[1].split('?')[0].split('_')
+                video_id = url.split('video')[1].split('?')[0]
+                if video_id.startswith('-'):
+                    video_id = video_id[1:]
+                    oid, vid = video_id.split('_')
+                    oid = '-' + oid
+                else:
+                    oid, vid = video_id.split('_')
                 return f'https://vk.com/video_ext.php?oid={oid}&id={vid}&hd=2'
             except Exception: pass
         if 'rutube.ru/video/' in url:
